@@ -36,4 +36,36 @@ class DBService
     {
         return $this->pdo;
     }
+
+    /**
+     * Получение данных пользователя из БД по id
+     *
+     * @param int $id
+     *
+     * @return array|null
+     */
+    public function getUserById(int $id)
+    {
+        $stmt = $this->pdo->prepare("SELECT id, login, password, username, amount FROM user WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        $result = $stmt->fetchAll();
+
+        return count($result) == 1 ? $result[0] : null;
+    }
+
+    /**
+     * Получение данных пользователя из БД по логину
+     *
+     * @param string $login
+     *
+     * @return array|null
+     */
+    public function getUserByLogin(string $login)
+    {
+        $stmt = $this->pdo->prepare("SELECT id, login, password, username, amount FROM user WHERE login = :login");
+        $stmt->execute([':login' => $login]);
+        $result = $stmt->fetchAll();
+
+        return count($result) == 1 ? $result[0] : null;
+    }
 }

@@ -13,8 +13,6 @@ class MainController extends BaseController
      */
     public function getIndex()
     {
-        session_start();
-
         if (!$this->userLogged()) {
             header('Location: /login');
         }
@@ -22,7 +20,7 @@ class MainController extends BaseController
         // Закрываем сессию после получения id текущего пользователя
         session_write_close();
 
-        if (!$user = $this->getUserById($id)) {
+        if (!$user = $this->getDBService()->getUserById($id)) {
             return $this->getErrorView('Пользователь не найден' , '/');
         }
 
@@ -37,8 +35,6 @@ class MainController extends BaseController
      */
     public function postIndex()
     {
-        session_start();
-
         if (!$this->userLogged()) {
             header('Location: /login');
         }
@@ -46,7 +42,7 @@ class MainController extends BaseController
         // Закрываем сессию после получения id текущего пользователя
         session_write_close();
 
-        if (!$user = $this->getUserById($id)) {
+        if (!$user = $this->getDBService()->getUserById($id)) {
             return $this->getErrorView('Пользователь не найден' , '/');
         }
 
@@ -55,16 +51,18 @@ class MainController extends BaseController
         if (!$sum) {
             return $this->getErrorView('Некорректная сумма списания ' . $clearTextSum , '/');
         }
+        // Первичная проверка суммы
         if ($sum > floatval($user['amount'])) {
             return $this->getErrorView('Сумма списания больше имеющейся', '/');
         }
 
         $pdo = $this->getPDO();
-        try {
-            $pdo->setAttribute(\PDO::ATTR_PERSISTENT, true);
+        $pdo->setAttribute(\PDO::ATTR_PERSISTENT, true);
+        $pdo->beginTransaction();
 
-            $pdo->beginTransaction();
-            $stmt = $pdo->prepare("UPDATE user SET amount = amount - :sum WHERE id = :id");
+        try {
+            // Списываем только, если сумма не больше имеющейся
+            $stmt = $pdo->prepare("UPDATE user SET amount = CASE WHEN amount >= :sum THEN amount - :sum ELSE amount END WHERE id = :id");
             $stmt->execute([':sum' => $sum, ':id' => $id]);
 
             // Какие-то другие возможные действия
@@ -83,12 +81,9 @@ class MainController extends BaseController
 
     /**
      * Маршрут GET /login
-     * @return string
      */
     public function getLogin()
     {
-        session_start();
-
         if ($this->userLogged()){
             header('Location: /');
         }
@@ -103,8 +98,6 @@ class MainController extends BaseController
      */
     public function postLogin()
     {
-        session_start();
-
         if ($this->userLogged()){
             header('Location: /');
         }
@@ -115,9 +108,7 @@ class MainController extends BaseController
             return $this->getErrorView('Не указан логин или пароль' , '/login');
         }
 
-        $user = $this->getUserByLogin($login);
-
-        if ($user) {
+        if ($user = $this->getDBService()->getUserByLogin($login)) {
             $hash = $user['password'];
             if (password_verify($password, $hash)) {
                 session_start();
@@ -133,7 +124,6 @@ class MainController extends BaseController
      */
     public function getLogout()
     {
-        session_start();
         $this->logoutUser();
         header('Location: /login');
     }

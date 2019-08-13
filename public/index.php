@@ -10,6 +10,8 @@ use App\Service\ExceptionService;
 // Глобальный обработчик исключений
 set_exception_handler([ExceptionService::class, 'handleGlobal']);
 
+session_start();
+
 // Роутер для обработки запросов
 $router = new RouteCollector();
 $router->controller('/', MainController::class);

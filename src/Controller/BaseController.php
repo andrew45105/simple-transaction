@@ -13,6 +13,25 @@ use App\Service\ResponseService;
 class BaseController
 {
     /**
+     * @var ConfigService
+     */
+    private $config;
+
+    /**
+     * @var DBService
+     */
+    private $db;
+
+    /**
+     * BaseController constructor.
+     */
+    public function __construct()
+    {
+        $this->config   = new ConfigService();
+        $this->db       = new DBService($this->config);
+    }
+
+    /**
      * Получение разметки страницы
      *
      * @param string $name
@@ -50,7 +69,17 @@ class BaseController
      */
     public function getParameter(string $key)
     {
-        return (new ConfigService())->get($key);
+        return $this->config->get($key);
+    }
+
+    /**
+     * Получение объекта DBService
+     *
+     * @return DBService
+     */
+    public function getDBService()
+    {
+        return $this->db;
     }
 
     /**
@@ -60,7 +89,7 @@ class BaseController
      */
     public function getPDO()
     {
-        return (new DBService(new ConfigService()))->getPDO();
+        return $this->db->getPDO();
     }
 
     /**
@@ -70,11 +99,7 @@ class BaseController
      */
     public function userLogged()
     {
-        return
-            isset($_SESSION['logged']) &&
-            $_SESSION['logged'] &&
-            isset($_SESSION['id']) &&
-            is_numeric($_SESSION['id']);
+        return isset($_SESSION['id']) && is_numeric($_SESSION['id']);
     }
 
     /**
@@ -94,8 +119,7 @@ class BaseController
      */
     public function loginUser($id)
     {
-        $_SESSION['logged'] = true;
-        $_SESSION['id']     = $id;
+        $_SESSION['id'] = $id;
     }
 
     /**
@@ -103,40 +127,6 @@ class BaseController
      */
     public function logoutUser()
     {
-        unset($_SESSION['logged'], $_SESSION['id']);
-    }
-
-    /**
-     * Получение данных пользователя из БД по id
-     *
-     * @param int $id
-     *
-     * @return array|null
-     */
-    public function getUserById(int $id)
-    {
-        $pdo = $this->getPDO();
-        $stmt = $pdo->prepare("SELECT id, login, password, username, amount FROM user WHERE id = :id");
-        $stmt->execute([':id' => $id]);
-        $result = $stmt->fetchAll();
-
-        return count($result) == 1 ? $result[0] : null;
-    }
-
-    /**
-     * Получение данных пользователя из БД по логину
-     *
-     * @param string $login
-     *
-     * @return array|null
-     */
-    public function getUserByLogin(string $login)
-    {
-        $pdo = $this->getPDO();
-        $stmt = $pdo->prepare("SELECT id, login, password, username, amount FROM user WHERE login = :login");
-        $stmt->execute([':login' => $login]);
-        $result = $stmt->fetchAll();
-
-        return count($result) == 1 ? $result[0] : null;
+        unset($_SESSION['id']);
     }
 }

@@ -13,6 +13,7 @@ class ResponseService
      *
      * @param string $name
      * @param array|null $args
+     *
      * @return string
      */
     public function getView(string $name, $args = null)
